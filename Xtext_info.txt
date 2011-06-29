@@ -1,0 +1,109 @@
+The following code won't work. RULE OCT is shadowed by RULE DEC. So
+there is no way to construct RULE OCT_NUM.
+==================================
+Module:
+	x = 'module' oct_num;
+
+
+terminal dec: '0'..'9';
+terminal oct: '0'..'7';
+
+terminal oct_num: ('0'..'7')+;
+==================================
+
+The following code work since Xtext tries to match the maximum length.
+==================================
+Module:
+	x = 'module' oct_num;
+
+
+terminal oct: '0'..'7';
+
+terminal oct_num: ('0'..'7')+;
+==================================
+
+
+
+!!!!!!!! Caution !!!!!!!
+When defining "terminal" using so called alternative, don't write blank around "|".
+
+
+!!!!!!!! Caution !!!!!!!
+The "negated token" (see p.25 in tutorial) is quite mysterious. Don't use it on
+strings (e.g. !'abc' )
+
+
+!!!!!!!! Caution !!!!!!!
+For parser rule, there is no support for greedy rule needed for the 
+following grammar.
+=======================
+test: kk+=Element+;
+Element: EleA | EleB | EleC;
+
+EleA: 'a' 'b'*;
+EleB: 'b';
+EleC: 'c';
+=======================
+
+We can write it in the following way
+=======================
+test: {test}ListA|ListB|ListC;
+
+ListA: 'a' 'b'* (ListA|ListC)?;
+
+ListB: 'b' (ListA|ListC)?;
+
+ListC: 'c' (ListA|ListB|ListC)?;
+=======================
+
+
+!!!!!!! time and space !!!!!!!!
+The grammar of ATS is big, the time of generating a parser for ats using antlr is too long.
+It exceeds the default time limit of antlr so that the whole process stops abruptly. We
+need to increase the time limit.
+
+Time: (Using Xtext 2.0 doesn't have this problem.)
+Add the following into two fragments (fragment 1 and 2) of file GenerateAnairiats.mwe2 
+to increase the time
+============================
+antlrParam = "-Xconversiontimeout" antlrParam = "10000"
+============================
+
+fragment 1
+============================
+fragment = parser.antlr.XtextAntlrGeneratorFragment {
+============================
+fragment 2
+============================
+fragment = parser.antlr.XtextAntlrUiGeneratorFragment {
+============================
+
+Space:  (Using Xtext 2.0 doesn't have this problem.)
+Xtext uses antlr to generate parser for ATS. But antlr runs out of Java VM heap.
+Right click on GenerateAnairiats.mwe2, "Run AS" -> "Run Configuration", add following
+=======================
+-Xms40m
+-Xmx512m
+=======================
+into VM arguments.
+
+
+!!!!!size of class exceeds limitation of Java
+Solution:
+Modify file GenerateAnairiats.mwe2
+from 
+===========================
+            fragment = parser.antlr.XtextAntlrUiGeneratorFragment {}
+==========================
+to
+============================
+            fragment = parser.antlr.XtextAntlrUiGeneratorFragment {
+            	options = {
+                  // backtrack = true
+                  classSplitting = true
+              }
+            }
+=============================
+
+
+
